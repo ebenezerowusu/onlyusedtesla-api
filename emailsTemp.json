@@ -1,0 +1,62 @@
+{
+  "VERIFY_EMAIL": {
+    "templateId": "SENDGRID_TMPL_VERIFY_EMAIL",
+    "vars": { "firstName": "Jane", "verifyUrl": "https://.../verify?token=abc" }
+  },
+  "WELCOME_PRIVATE": {
+    "templateId": "SENDGRID_TMPL_WELCOME_PRIVATE",
+    "vars": { "firstName": "Jane", "dashboardUrl": "https://app.onlyusedtesla.com/dashboard" }
+  },
+  "WELCOME_DEALER": {
+    "templateId": "SENDGRID_TMPL_WELCOME_DEALER",
+    "vars": { "firstName": "John", "dealerName": "Tesla Fremont", "dealerDashboardUrl": "https://app.onlyusedtesla.com/dealer" }
+  },
+  "RESET_PASSWORD": {
+    "templateId": "SENDGRID_TMPL_RESET_PASSWORD",
+    "vars": { "firstName": "Jane", "resetUrl": "https://.../reset?token=xyz" }
+  },
+  "MFA_CODE_EMAIL": {
+    "templateId": "SENDGRID_TMPL_MFA_CODE_EMAIL",
+    "vars": { "firstName": "Jane", "code": "123456", "expiresMinutes": 10 }
+  },
+  "CHANGE_EMAIL_VERIFY": {
+    "templateId": "SENDGRID_TMPL_CHANGE_EMAIL_VERIFY",
+    "vars": { "firstName": "Jane", "verifyUrl": "https://.../change-email?token=def" }
+  },
+  "NEW_LOGIN_ALERT": {
+    "templateId": "SENDGRID_TMPL_NEW_LOGIN_ALERT",
+    "vars": { "firstName": "Jane", "time": "2025-09-01T10:00:00Z", "ip": "203.0.113.5", "city": "Accra", "userAgent": "iPhone Safari" }
+  },
+  "DEALER_APP_RECEIVED": {
+    "templateId": "SENDGRID_TMPL_DEALER_APP_RECEIVED",
+    "vars": { "dealerName": "Luxe EV Group", "submittedAt": "2025-09-01T10:00:00Z" }
+  },
+  "DEALER_APP_APPROVED": {
+    "templateId": "SENDGRID_TMPL_DEALER_APP_APPROVED",
+    "vars": { "dealerName": "Luxe EV Group", "dealerDashboardUrl": "https://app.onlyusedtesla.com/dealer" }
+  },
+  "DEALER_APP_REJECTED": {
+    "templateId": "SENDGRID_TMPL_DEALER_APP_REJECTED",
+    "vars": { "dealerName": "Luxe EV Group", "reason": "Insufficient documentation" }
+  },
+  "KYC_APPROVED": {
+    "templateId": "SENDGRID_TMPL_KYC_APPROVED",
+    "vars": { "sellerName": "John Doe", "dashboardUrl": "https://app.onlyusedtesla.com/dealer" }
+  },
+  "KYC_REJECTED": {
+    "templateId": "SENDGRID_TMPL_KYC_REJECTED",
+    "vars": { "sellerName": "John Doe", "reason": "Document mismatch", "resubmitUrl": "https://.../kyc/resubmit" }
+  },
+  "DEALER_STAFF_INVITE": {
+    "templateId": "SENDGRID_TMPL_DEALER_STAFF_INVITE",
+    "vars": { "inviterName": "Alice Admin", "dealerName": "Tesla Fremont", "inviteEmail": "new.staff@dealer.com", "setPasswordUrl": "https://.../set-password?token=ghi" }
+  },
+  "ROLE_CHANGED": {
+    "templateId": "SENDGRID_TMPL_ROLE_CHANGED",
+    "vars": { "fullName": "John Smith", "oldRole": "seller", "newRole": "dealer_admin", "dashboardUrl": "https://app.onlyusedtesla.com/dealer" }
+  },
+  "CASH_OFFER_ALERT": {
+    "templateId": "SENDGRID_TMPL_CASHOFFER_ALERT",
+    "vars": { "listingShortId": "SDFS", "countryCode": "US", "make": "DSD", "model": "Model Y", "year": "2025",  "trim": "Long Range AWD", "priceFormatted": "$49,950", "sellerType": "private", "color": "Solid Black", "mileageFormatted": "40,500 mi", "city": "Accra", "state": "Greater Accra", "country": "Ghana", "listingUrl": "https://.....", "listingImage": "https://..." }
+  }
+}

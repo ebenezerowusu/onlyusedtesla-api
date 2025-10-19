@@ -1,0 +1,42 @@
+{
+  "MFA_CODE": {
+    "envOverride": "SMS_TMPL_MFA_CODE",
+    "default": "[OnlyUsedTesla] Your code is {{code}} (expires in {{expiresMinutes}}m). If you didn’t request this, ignore.",
+    "vars": { "code": "123456", "expiresMinutes": 10 }
+  },
+  "OFFER_NEW": {
+    "envOverride": "SMS_TMPL_OFFER_NEW",
+    "default": "[OnlyUsedTesla] New {{buyerType}} offer {{amount}} on {{year}} {{make}} {{model}} ({{shortId}}). View: {{url}}",
+    "vars": { "buyerType": "Private", "amount": "$48,000", "year": 2016, "make": "Tesla", "model": "Model X", "shortId": "a0ae1", "url": "https://app.onlyusedtesla.com/offers/..." }
+  },
+  "OFFER_COUNTER": {
+    "envOverride": "SMS_TMPL_OFFER_COUNTER",
+    "default": "[OnlyUsedTesla] Counter-offer {{amount}} on {{year}} {{make}} {{model}} ({{shortId}}). View: {{url}}",
+    "vars": { "amount": "$49,000", "year": 2016, "make": "Tesla", "model": "Model X", "shortId": "a0ae1", "url": "https://app.onlyusedtesla.com/offers/..." }
+  },
+  "OFFER_ACCEPTED": {
+    "envOverride": "SMS_TMPL_OFFER_ACCEPTED",
+    "default": "[OnlyUsedTesla] Offer accepted for {{year}} {{make}} {{model}} ({{shortId}}). Next steps: {{url}}",
+    "vars": { "year": 2016, "make": "Tesla", "model": "Model X", "shortId": "a0ae1", "url": "https://app.onlyusedtesla.com/orders/..." }
+  },
+  "OFFER_REJECTED": {
+    "envOverride": "SMS_TMPL_OFFER_REJECTED",
+    "default": "[OnlyUsedTesla] Offer not accepted for {{year}} {{make}} {{model}} ({{shortId}}). See details: {{url}}",
+    "vars": { "year": 2016, "make": "Tesla", "model": "Model X", "shortId": "a0ae1", "url": "https://app.onlyusedtesla.com/offers/..." }
+  },
+  "CASHOFFER_NEW_LISTING": {
+    "envOverride": "SMS_TMPL_CASHOFFER_NEW_LISTING",
+    "default": "[OnlyUsedTesla] New CashOffer: {{year}} {{make}} {{model}} in {{city}}, {{state}} for {{price}} ({{shortId}}). View: {{url}}",
+    "vars": { "year": 2018, "make": "Tesla", "model": "Model 3", "city": "San Jose", "state": "CA", "price": "$49,950", "shortId": "a0ae1", "url": "https://onlyusedtesla.com/l/a0ae1" }
+  },
+  "KYC_APPROVED": {
+    "envOverride": "SMS_TMPL_KYC_APPROVED",
+    "default": "[OnlyUsedTesla] KYC approved. You can now publish listings and receive offers. Dashboard: {{url}}",
+    "vars": { "url": "https://app.onlyusedtesla.com/dealer" }
+  },
+  "KYC_REJECTED": {
+    "envOverride": "SMS_TMPL_KYC_REJECTED",
+    "default": "[OnlyUsedTesla] KYC not approved: {{reason}}. Resubmit here: {{url}}",
+    "vars": { "reason": "Document mismatch", "url": "https://app.onlyusedtesla.com/kyc" }
+  }
+}

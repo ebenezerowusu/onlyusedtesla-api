@@ -1,0 +1,80 @@
+openapi: 3.1.0
+info:
+  title: OnlyUsedTesla API
+  version: 0.1.1
+servers:
+  - url: http://localhost:3003
+tags:
+  - name: Health
+  - name: Listings
+security:
+  - bearerAuth: []
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  parameters:
+    XCountry:
+      name: X-Country
+      in: header
+      description: Required for non-admin routes; country isolation.
+      required: false
+      schema: { type: string, example: "US" }
+    XCountryRequired:
+      name: X-Country
+      in: header
+      description: Country isolation. Required for this endpoint.
+      required: true
+      schema: { type: string, example: "US" }
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+    Ct:
+      name: continuationToken
+      in: query
+      schema: { type: string }
+    SaleType:
+      name: saleType
+      in: query
+      description: Repeatable enum. Allowed shapes per business rules.
+      schema:
+        type: string
+        enum: [ForSale, Lease, SalePending, CashOffer]
+      explode: true
+paths:
+  /health:
+    get:
+      tags: [Health]
+      summary: Service liveness
+      security: []
+      responses: { '200': { description: OK } }
+
+  /health/cosmos:
+    get:
+      tags: [Health]
+      summary: Cosmos connectivity
+      security: []
+      responses: { '200': { description: OK } }
+
+  /health/storage:
+    get:
+      tags: [Health]
+      summary: Azure Storage connectivity
+      security: []  
+      responses: { '200': { description: OK } }
+  /listings/search:
+    get:
+      tags: [Listings]
+      summary: Search listings (FULL docs inc. images). Country-filtered.
+      parameters:
+        - { $ref: '#/components/parameters/XCountryRequired' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Ct' }
+        - { $ref: '#/components/parameters/SaleType' }
+        - name: saleTypeMatch
+          in: query
+          schema: { type: string, enum: [any, only], default: any }
+      responses: { '200': { description: OK } }
