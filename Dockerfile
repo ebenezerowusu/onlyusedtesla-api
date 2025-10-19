@@ -1,7 +1,5 @@
-# syntax=docker/dockerfile:1
-
 ###########
-# deps for build (with dev deps)
+# deps + build
 ###########
 FROM node:20-alpine AS deps
 WORKDIR /app
