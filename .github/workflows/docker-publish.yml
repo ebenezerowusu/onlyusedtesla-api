@@ -14,12 +14,16 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Generate date time string.
+        id: datetime
+        run: |
+          DATE=$(date +"%y%m%d-%H%M")
+          echo "datetime=$DATE" >> $GITHUB_OUTPUT
 
       - name: Docker login to ACR
         uses: azure/docker-login@v2
