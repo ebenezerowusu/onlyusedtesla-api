@@ -3,8 +3,8 @@ name: Build & Push API Image
 on:
   push:
     branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    tags: [ 'v*' ]
+  workflow_dispatch:
 
 env:
   REGISTRY: onlyusedtesla.azurecr.io
@@ -13,34 +13,38 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
-      - uses: actions/checkout@v4
-
-      - name: Compute image tag
-        run: echo "TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
-
-      # Build BEFORE logging into ACR (clean Docker Hub env)
-      - name: Build image
-        env:
-          DOCKER_CONFIG: ~/.docker   # ensure a clean config for the build
-        run: |
-          mkdir -p ~/.docker
-          docker build -f Dockerfile -t $REGISTRY/$IMAGE_NAME:${TAG} .
-
-      # Now login to ACR and push
-      - name: Set tag
-        id: meta
-        run: echo "TAG=$(date +'%y%m%d-%H%M')" >> $GITHUB_OUTPUT
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Docker login to ACR
-        uses: azure/docker-login@v2
+        uses: docker/login-action@v3
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ secrets.PRODUCTION_REGISTRY_USERNAME }}
           password: ${{ secrets.PRODUCTION_REGISTRY_PASSWORD }}
 
-      - name: Build
-        run: docker build -f ./Dockerfile -t $REGISTRY/$IMAGE_NAME:${{ steps.meta.outputs.TAG }} .
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest,enable={{is_default_branch}}
+            type=sha,prefix=sha-,format=short
+            type=ref,event=tag
 
-      - name: Push
-        run: docker push $REGISTRY/$IMAGE_NAME:${{ steps.meta.outputs.TAG }}
+      - name: Build & push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache
+          cache-to: type=registry,ref=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:buildcache,mode=max
+
