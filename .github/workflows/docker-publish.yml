@@ -28,16 +28,16 @@ jobs:
           docker build -f Dockerfile -t $REGISTRY/$IMAGE_NAME:${TAG} .
 
       # Now login to ACR and push
+      - name: Set tag
+        id: meta
+        run: echo "TAG=$(date +'%y%m%d-%H%M')" >> $GITHUB_OUTPUT
+
       - name: Docker login to ACR
         uses: azure/docker-login@v2
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ secrets.PRODUCTION_REGISTRY_USERNAME }}
           password: ${{ secrets.PRODUCTION_REGISTRY_PASSWORD }}
-
-      - name: Set tag
-        id: meta
-        run: echo "TAG=$(date +'%y%m%d-%H%M')" >> $GITHUB_OUTPUT
 
       - name: Build
         run: docker build -f ./Dockerfile -t $REGISTRY/$IMAGE_NAME:${{ steps.meta.outputs.TAG }} .
