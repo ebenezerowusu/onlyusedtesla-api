@@ -1,7 +1,7 @@
 ###########
 # deps + build
 ###########
-FROM nginx:alpine AS deps
+FROM node:20-alpine AS deps
 WORKDIR /app
 # make sure BOTH files exist in git
 COPY package.json package-lock.json ./
@@ -26,7 +26,7 @@ COPY src/swagger/openapi.yaml src/swagger/openapi.yaml
 ###########
 # deps for runtime (production only, clean tree)
 ###########
-FROM nginx:alpine AS prod-deps
+FROM node:20-alpine AS prod-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 # install ONLY prod deps in a clean environment
@@ -35,7 +35,7 @@ RUN npm ci --omit=dev --no-audit --no-fund --legacy-peer-deps
 ###########
 # runtime
 ###########
-FROM nginx:alpine AS runtime
+FROM node:20-alpine AS runtime
 WORKDIR /app
 RUN apk add --no-cache dumb-init curl
 ENV NODE_ENV=production
