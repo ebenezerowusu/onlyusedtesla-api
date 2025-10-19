@@ -4,9 +4,8 @@ on:
   push:
     branches: [ main ]
   pull_request:
-    branch: [ main ]
-
-
+    branches: [ main ]
+  
 env:
   REGISTRY: onlyusedtesla.azurecr.io
   IMAGE_NAME: out-api-v2
@@ -14,17 +13,21 @@ env:
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Generate date time string.
-        id: datetime
+      - name: Compute image tag
+        run: echo "TAG=${GITHUB_SHA::7}" >> $GITHUB_ENV
+
+      # Build BEFORE logging into ACR (clean Docker Hub env)
+      - name: Build image
+        env:
+          DOCKER_CONFIG: ~/.docker   # ensure a clean config for the build
         run: |
-          DATE=$(date +"%y%m%d-%H%M")
-          echo "datetime=$DATE" >> $GITHUB_OUTPUT
+          mkdir -p ~/.docker
+          docker build -f Dockerfile -t $REGISTRY/$IMAGE_NAME:${TAG} .
 
+      # Now login to ACR and push
       - name: Docker login to ACR
         uses: azure/docker-login@v2
         with:
@@ -32,6 +35,5 @@ jobs:
           username: ${{ secrets.PRODUCTION_REGISTRY_USERNAME }}
           password: ${{ secrets.PRODUCTION_REGISTRY_PASSWORD }}
 
-      - run: |
-          docker build -f ./Dockerfile -t onlyusedtesla.azurecr.io/out-api-v2:${{ steps.datetime.outputs.datetime }} .
-          docker push onlyusedtesla.azurecr.io/out-api-v2:${{ steps.datetime.outputs.datetime }}
+      - name: Push image
+        run: docker push $REGISTRY/$IMAGE_NAME:${TAG}
