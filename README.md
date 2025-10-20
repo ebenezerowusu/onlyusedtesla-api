@@ -1,4 +1,4 @@
-# OnlyUsedTesla API — Stage 0 (Fastify)
+# OnlyUsedTesla API
 
 > Requires **Node >= 20.10** and **npm >= 10**.
 
