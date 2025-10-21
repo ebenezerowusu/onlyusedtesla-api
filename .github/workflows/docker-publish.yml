@@ -1,34 +1,28 @@
 name: Build & Push API Image
-on:
-  push:
-    branches: [ main ]
+on: [push]
 
 env:
   REGISTRY: onlyusedtesla.azurecr.io
   IMAGE_NAME: out-api-v2
+  TAG: ${{ github.sha }}
 
 jobs:
-  build-and-push:
+  docker:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      # Login to Azure & ACR (pull mirrored bases + push final image)
       - uses: azure/docker-login@v2
         with:
-          registry: ${{ env.REGISTRY }}
-          username: ${{ secrets.PRODUCTION_REGISTRY_USERNAME }}
-          password: ${{ secrets.PRODUCTION_REGISTRY_PASSWORD }}
-
-      - name: Compute tag
-        id: tag
-        run: echo "tag=$(date +'%y%m%d-%H%M')-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+          login-server: ${{ env.REGISTRY }}
+          username: ${{ secrets.ACR_USERNAME }}
+          password: ${{ secrets.ACR_PASSWORD }}
 
       - name: Build
         run: |
-          docker build -f ./Dockerfile \
-            -t $REGISTRY/$IMAGE_NAME:${{ steps.tag.outputs.tag }} \
-            .
+          docker build \
+            --build-arg BASE_REGISTRY=${{ env.REGISTRY }} \
+            -t $REGISTRY/$IMAGE_NAME:$TAG .
 
       - name: Push
-        run: docker push $REGISTRY/$IMAGE_NAME:${{ steps.tag.outputs.tag }}
+        run: docker push $REGISTRY/$IMAGE_NAME:$TAG
