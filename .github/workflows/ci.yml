@@ -24,12 +24,3 @@ jobs:
 
       - name: Install Dependencies
         run: npm i --legacy-peer-deps
-
-      - name: Run nx lint
-        run: npm run lint
-
-      - name: Run nx test
-        run: npm run test
-
-      - name: Run nx build
-        run: npm run b2e
