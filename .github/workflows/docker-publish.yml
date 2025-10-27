@@ -1,28 +1,46 @@
 name: Build & Push API Image
-on: [push]
+
+on:
+  push:
+    branches: [ production ]
+  pull_request:
+    branches: [ production ]
+  workflow_dispatch:
 
 env:
   REGISTRY: onlyusedtesla.azurecr.io
   IMAGE_NAME: out-api-v2
-  TAG: ${{ github.sha }}
+  SHA_TAG: ${{ github.sha }}
 
 jobs:
   docker:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - uses: azure/docker-login@v2
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Login to your ACR (uses admin user/pass or token you stored as secrets)
+      - name: ACR Login
+        uses: azure/docker-login@v2
         with:
           login-server: ${{ env.REGISTRY }}
           username: ${{ secrets.PRODUCTION_REGISTRY_USERNAME }}
           password: ${{ secrets.PRODUCTION_REGISTRY_PASSWORD }}
 
-      - name: Build
+      - name: Build image
         run: |
           docker build \
-            --build-arg BASE_REGISTRY=${{ env.REGISTRY }} \
-            -t $REGISTRY/$IMAGE_NAME:$TAG .
+            --build-arg BASE_IMAGE=${{ env.REGISTRY }}/base/node:20-alpine \
+            --build-arg TAG=${{ env.SHA_TAG }} \
+            -t $REGISTRY/$IMAGE_NAME:${{ env.SHA_TAG }} .
 
-      - name: Push
-        run: docker push $REGISTRY/$IMAGE_NAME:$TAG
+      - name: Push image (commit tag)
+        run: docker push $REGISTRY/$IMAGE_NAME:${{ env.SHA_TAG }}
+
+      # Optional: also tag/push "latest" for convenience
+      - name: Tag & push latest
+        if: github.ref == 'refs/heads/production'
+        run: |
+          docker tag  $REGISTRY/$IMAGE_NAME:${{ env.SHA_TAG }}  $REGISTRY/$IMAGE_NAME:latest
+          docker push $REGISTRY/$IMAGE_NAME:latest

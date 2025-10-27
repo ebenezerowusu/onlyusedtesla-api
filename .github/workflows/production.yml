@@ -2,9 +2,9 @@ name: Docker Build Production OUT WEB
 
 on:
   push:
-    branches: [production]
+    branches: [production1]
   pull_request:
-    branches: [production]
+    branches: [production1]
 
 jobs:
   OnlyUsedTesla-web-us-prod:
