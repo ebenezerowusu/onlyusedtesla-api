@@ -1,19 +1,19 @@
-# No "syntax=" line so we never hit Docker Hub automatically.
+# No syntax= line, so we never hit Docker Hub implicitly.
 
-# Your mirrored base image in ACR. Override at build time if needed.
 ARG BASE_IMAGE=onlyusedtesla.azurecr.io/base/node:20-alpine
 ARG TAG=dev
 
 ###########
-# 1) Dependencies (install with lockfile)
+# 1) deps (install with lockfile)
 ###########
 FROM ${BASE_IMAGE} AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci
+# ↓ Allow peer conflicts to unblock builds
+RUN npm ci --legacy-peer-deps
 
 ###########
-# 2) Build (compile TS -> JS)
+# 2) build (compile TS -> JS)
 ###########
 FROM ${BASE_IMAGE} AS build
 WORKDIR /app
@@ -23,46 +23,41 @@ COPY --from=deps /app/node_modules ./node_modules
 RUN npm run build
 
 ###########
-# 3) Prod deps only (omit dev)
+# 3) prod deps only (omit dev)
 ###########
 FROM ${BASE_IMAGE} AS prod-deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm ci --omit=dev
+# ↓ Keep prod tree small, but still allow peer conflicts
+RUN npm ci --omit=dev --legacy-peer-deps
 
 ###########
-# 4) Runtime
+# 4) runtime
 ###########
 FROM ${BASE_IMAGE} AS runtime
+# redeclare TAG so it's available in this stage too
+ARG TAG=dev
+
 WORKDIR /app
-
-# small helpers
 RUN apk add --no-cache dumb-init curl
-
 ENV NODE_ENV=production
 ENV PORT=3003
 EXPOSE 3003
 
-# OCI labels (useful in ACR/Container Apps)
+# OCI labels (handy in ACR / Container Apps)
 LABEL org.opencontainers.image.title="onlyusedtesla-api" \
       org.opencontainers.image.description="OnlyUsedTesla Fastify/NestJS API" \
-      org.opencontainers.image.source="https://github.com/onlyusedtesla/onlyusedtesla-api" \
       org.opencontainers.image.revision="${TAG}"
 
-# app payload
+# payload
 COPY --from=build      /app/dist          ./dist
 COPY --from=prod-deps  /app/node_modules  ./node_modules
 COPY package.json ./
-
-# Your app currently serves swagger from src/swagger (keep it)
+# swagger (your app serves from src/swagger)
 COPY src/swagger ./src/swagger
 
-# healthcheck
 HEALTHCHECK --interval=30s --timeout=3s --start-period=10s --retries=3 \
   CMD curl -fs http://127.0.0.1:${PORT}/health || exit 1
 
-# node user already exists in the official node alpine image
 USER node
-
 CMD ["dumb-init","node","--enable-source-maps","dist/src/main.js"]
-
