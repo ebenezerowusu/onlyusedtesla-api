@@ -3,7 +3,7 @@ info:
   title: OnlyUsedTesla API
   version: 0.1.1
 servers:
-  - url: http://localhost:3003
+  - url: https://apiv2.onlyusedtesla.com
 tags:
   - name: Health
   - name: Listings
