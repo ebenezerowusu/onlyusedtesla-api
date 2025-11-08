@@ -16,7 +16,7 @@ RUN npm ci --legacy-peer-deps
 ###########
 FROM ${BASE_IMAGE} AS build
 WORKDIR /app
-# ✅ bring package files so `npm run build` can read scripts
+#bring package files so `npm run build` can read scripts
 COPY package.json package-lock.json ./
 COPY tsconfig*.json ./
 COPY src ./src
