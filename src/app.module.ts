@@ -4,6 +4,13 @@ import { HealthModule } from './health/health.module';
 import { AppConfigSchema } from './config/app.config';
 import type { ZodIssue } from 'zod';
 
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { RbacModule } from './rbac/rbac.module';
+import { EmailModule } from './notify/email/email.module';
+import { SmsModule } from './notify/sms/sms.module';
+import { JwtModule } from './crypto/jwt.module';
+
 @Module({
   imports: [
     ConfigModule.forRoot({
@@ -23,6 +30,12 @@ import type { ZodIssue } from 'zod';
       },
     }),
     HealthModule,
+    JwtModule,
+    EmailModule,
+    SmsModule,
+    UsersModule,
+    RbacModule,
+    AuthModule,
   ],
 })
 export class AppModule {}
