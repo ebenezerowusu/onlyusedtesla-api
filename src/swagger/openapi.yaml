@@ -3,68 +3,41 @@ info:
   title: OnlyUsedTesla API
   version: 0.1.1
 servers:
-  - url: http://localhost:3003
+  - url: https://apiv2.onlyusedtesla.com
+
 tags:
   - name: Health
   - name: Listings
+  - name: Auth
+
 security:
   - bearerAuth: []
-components:
-  securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
-  parameters:
-    XCountry:
-      name: X-Country
-      in: header
-      description: Required for non-admin routes; country isolation.
-      required: false
-      schema: { type: string, example: "US" }
-    XCountryRequired:
-      name: X-Country
-      in: header
-      description: Country isolation. Required for this endpoint.
-      required: true
-      schema: { type: string, example: "US" }
-    Limit:
-      name: limit
-      in: query
-      schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
-    Ct:
-      name: continuationToken
-      in: query
-      schema: { type: string }
-    SaleType:
-      name: saleType
-      in: query
-      description: Repeatable enum. Allowed shapes per business rules.
-      schema:
-        type: string
-        enum: [ForSale, Lease, SalePending, CashOffer]
-      explode: true
+
 paths:
   /health:
     get:
       tags: [Health]
       summary: Service liveness
       security: []
-      responses: { '200': { description: OK } }
+      responses:
+        '200': { description: OK }
 
   /health/cosmos:
     get:
       tags: [Health]
       summary: Cosmos connectivity
       security: []
-      responses: { '200': { description: OK } }
+      responses:
+        '200': { description: OK }
 
   /health/storage:
     get:
       tags: [Health]
       summary: Azure Storage connectivity
-      security: []  
-      responses: { '200': { description: OK } }
+      security: []
+      responses:
+        '200': { description: OK }
+
   /listings/search:
     get:
       tags: [Listings]
@@ -77,4 +50,133 @@ paths:
         - name: saleTypeMatch
           in: query
           schema: { type: string, enum: [any, only], default: any }
-      responses: { '200': { description: OK } }
+      responses:
+        '200': { description: OK }
+
+  /auth/signup/private:
+    post:
+      tags: [Auth]
+      summary: Sign up as Private seller
+      parameters:
+        - { $ref: '#/components/parameters/XCountry' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignUpPrivate' }
+      responses:
+        '201': { description: Created }
+
+  /auth/signup/dealer:
+    post:
+      tags: [Auth]
+      summary: Sign up as Dealer (creates user + reserves sellerId)
+      parameters:
+        - { $ref: '#/components/parameters/XCountry' }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignUpDealer' }
+      responses:
+        '201': { description: Created }
+
+  /auth/signin:
+    post:
+      tags: [Auth]
+      summary: Sign in (email + password)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SignIn' }
+      responses:
+        '200': { description: OK }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    XCountry:
+      name: X-Country
+      in: header
+      description: Required for non-admin routes; country isolation.
+      required: false
+      schema: { type: string, example: "US" }
+
+    XCountryRequired:
+      name: X-Country
+      in: header
+      description: Country isolation. Required for this endpoint.
+      required: true
+      schema: { type: string, example: "US" }
+
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+
+    Ct:
+      name: continuationToken
+      in: query
+      schema: { type: string }
+
+    # Repeatable query param (?saleType=ForSale&saleType=CashOffer)
+    SaleType:
+      name: saleType
+      in: query
+      description: Repeatable enum. Allowed shapes per business rules.
+      schema:
+        type: array
+        items:
+          type: string
+          enum: [ForSale, Lease, SalePending, CashOffer]
+      style: form
+      explode: true
+
+  schemas:
+    SignUpPrivate:
+      type: object
+      required: [firstName, lastName, email, phone, password, confirmPassword]
+      properties:
+        firstName: { type: string }
+        lastName:  { type: string }
+        email:     { type: string, format: email }
+        phone:     { type: string }
+        zipCode:   { type: string }
+        password:  { type: string, minLength: 8 }
+        confirmPassword: { type: string, minLength: 8 }
+        acceptTos: { type: boolean }
+        country:   { type: string, example: "US" }
+
+    SignUpDealer:
+      type: object
+      required:
+        [firstName, lastName, email, phone, address, password, confirmPassword, businessType, companyName, syndicationSystem]
+      properties:
+        firstName: { type: string }
+        lastName:  { type: string }
+        email:     { type: string, format: email }
+        phone:     { type: string }
+        address:   { type: string }
+        password:  { type: string, minLength: 8 }
+        confirmPassword: { type: string, minLength: 8 }
+        businessType: { type: string }
+        companyName:  { type: string }
+        syndicationSystem: { type: string }
+        owner: { type: boolean }
+        businessSites: { type: array, items: { type: string } }
+        subscriptionProductIds: { type: array, items: { type: string } }
+        acceptTos: { type: boolean }
+        country:   { type: string, example: "US" }
+
+    SignIn:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, minLength: 8 }
