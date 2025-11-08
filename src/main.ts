@@ -45,6 +45,11 @@ async function bootstrap() {
           <title>OnlyUsedTesla API Docs</title>
           
           <link rel="stylesheet" href="/docs/swagger-ui.css" />
+          <link data-n-head="ssr" rel="shortcut icon" href="https://onlyusedtesla.com/assets/icon_64x64.24a82d.png">
+          <link rel="icon" type="image/x-icon" href="https://onlyusedtesla.com/favicon.ico">
+          <link rel="icon" type="image/png" sizes="512x512" href="https://onlyusedtesla.com/assets/icon_512x512.24a82d.png">
+          <link data-n-head="ssr" rel="apple-touch-icon" href="https://onlyusedtesla.com/assets/icon_512x512.24a82d.png" sizes="512x512">
+          <link rel="icon" type="image/png" sizes="64x64" href="https://onlyusedtesla.com/assets/icon_64x64.24a82d.png">
         </head>
         <body>
           <div id="swagger-ui"></div>
