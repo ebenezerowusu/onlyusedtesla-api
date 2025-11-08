@@ -19,6 +19,18 @@ const Azure = z.object({
   AZURE_STORAGE_ACCOUNT: z.string().optional(),
 });
 
+const Stripe = z.object({
+  STRIPE_SECRET_KEY: z.string().min(1),
+  STRIPE_WEBHOOK_SECRET: z.string().min(1),
+  STRIPE_PRODUCT_CASHOFFER: z.string().optional(),
+  STRIPE_PRICE_CASHOFFER: z.string().optional(),
+  STRIPE_PRODUCT_DEALER_WHOLESALE: z.string().optional(),
+  STRIPE_PRICE_DEALER_WHOLESALE: z.string().optional(),
+  STRIPE_PRODUCT_DEALER_ADVERTISEMENT: z.string().optional(),
+  STRIPE_PRICE_DEALER_ADVERTISEMENT: z.string().optional(),
+  BILLING_WEBHOOK_TOLERANCE_SEC: z.coerce.number().default(300)
+}); // Placeholder for Stripe config
+
 const Email = z.object({
   SENDGRID_API_KEY: z.string().min(1),
   SENDGRID_FROM_EMAIL: z.string().email(),
@@ -85,7 +97,8 @@ export const AppConfigSchema = Common
   .extend(Email.shape)
   .extend(Sms.shape)
   .extend(Jwt.shape)
-  .extend(Optional.shape);
+  .extend(Optional.shape)
+  .extend(Stripe.shape);
 
 export type AppConfig = z.infer<typeof AppConfigSchema>;
 

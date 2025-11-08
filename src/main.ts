@@ -43,6 +43,7 @@ async function bootstrap() {
         <head>
           <meta charset="utf-8"/>
           <title>OnlyUsedTesla API Docs</title>
+          
           <link rel="stylesheet" href="/docs/swagger-ui.css" />
         </head>
         <body>
