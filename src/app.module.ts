@@ -1,15 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { HealthModule } from './health/health.module';
 import { AppConfigSchema } from './config/app.config';
 import type { ZodIssue } from 'zod';
 
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { RbacModule } from './rbac/rbac.module';
-import { EmailModule } from './notify/email/email.module';
-import { SmsModule } from './notify/sms/sms.module';
-import { JwtModule } from './crypto/jwt.module';
+import { SellersModule } from './sellers/sellers.module';
+import { SellerGroupsModule } from './seller-groups/seller-groups.module';
+import { RolesModule } from './roles/roles.module';
+import { PermissionsModule } from './permissions/permissions.module';
+import { PaymentsModule } from './payments/payments.module';
+import { NotifyModule } from './notify/notify.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   imports: [
@@ -30,13 +32,14 @@ import { JwtModule } from './crypto/jwt.module';
       },
     }),
     HealthModule,
-    JwtModule,
-    EmailModule,
-    SmsModule,
-    UsersModule,
-    RbacModule,
     AuthModule,
+    UsersModule,
+    SellersModule,
+    SellerGroupsModule,
+    RolesModule,
+    PermissionsModule,
+    PaymentsModule,
+    NotifyModule,
   ],
 })
 export class AppModule {}
-

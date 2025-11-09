@@ -4,14 +4,21 @@ info:
   version: 0.1.1
 servers:
   - url: https://apiv2.onlyusedtesla.com
+  - url: http://localhost:3003
+
+security:
+  - bearerAuth: []
 
 tags:
   - name: Health
   - name: Listings
   - name: Auth
-
-security:
-  - bearerAuth: []
+  - name: Users
+  - name: Sellers
+  - name: SellerGroups
+  - name: Roles
+  - name: Permissions
+  - name: Payments
 
 paths:
   /health:
@@ -46,7 +53,7 @@ paths:
         - { $ref: '#/components/parameters/XCountryRequired' }
         - { $ref: '#/components/parameters/Limit' }
         - { $ref: '#/components/parameters/Ct' }
-        - { $ref: '#/components/parameters/SaleType' }
+        - { $ref: '#/components/parameters/SaleType' }  # repeatable (?saleType=ForSale&saleType=CashOffer)
         - name: saleTypeMatch
           in: query
           schema: { type: string, enum: [any, only], default: any }
@@ -70,7 +77,7 @@ paths:
   /auth/signup/dealer:
     post:
       tags: [Auth]
-      summary: Sign up as Dealer (creates user + reserves sellerId)
+      summary: Sign up as Dealer (creates user + seller; optional sellerGroup)
       parameters:
         - { $ref: '#/components/parameters/XCountry' }
       requestBody:
@@ -93,6 +100,150 @@ paths:
       responses:
         '200': { description: OK }
 
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh tokens
+      responses:
+        '200': { description: OK }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout
+      responses:
+        '204': { description: No Content }
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Current user
+      responses:
+        '200': { description: OK }
+    patch:
+      tags: [Users]
+      summary: Update current user
+      responses:
+        '200': { description: OK }
+
+  /sellers/me:
+    get:
+      tags: [Sellers]
+      summary: My seller document
+      responses:
+        '200': { description: OK }
+
+  /sellers/{id}:
+    get:
+      tags: [Sellers]
+      summary: Get seller by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    patch:
+      tags: [Sellers]
+      summary: Update seller
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /seller-groups:
+    post:
+      tags: [SellerGroups]
+      summary: Create seller group
+      responses:
+        '201': { description: Created }
+    get:
+      tags: [SellerGroups]
+      summary: List seller groups
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Ct' }
+      responses:
+        '200': { description: OK }
+
+  /roles:
+    get:
+      tags: [Roles]
+      summary: List roles
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Ct' }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Roles]
+      summary: Create role
+      responses:
+        '201': { description: Created }
+
+  /roles/{id}:
+    patch:
+      tags: [Roles]
+      summary: Update role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /permissions:
+    get:
+      tags: [Permissions]
+      summary: List permissions
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Permissions]
+      summary: Create permission
+      responses:
+        '201': { description: Created }
+
+  /permissions/{id}:
+    patch:
+      tags: [Permissions]
+      summary: Update permission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /payments/dealer/checkout:
+    post:
+      tags: [Payments]
+      summary: Init dealer subscription checkout (Stripe)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subscriptionIds, customerEmail]
+              properties:
+                subscriptionIds:
+                  type: array
+                  items: { type: string }
+                customerEmail:
+                  type: string
+                  format: email
+      responses:
+        '201': { description: Created }
+
 components:
   securitySchemes:
     bearerAuth:
@@ -104,7 +255,7 @@ components:
     XCountry:
       name: X-Country
       in: header
-      description: Required for non-admin routes; country isolation.
+      description: Optional country isolation for non-admin routes.
       required: false
       schema: { type: string, example: "US" }
 
@@ -125,11 +276,10 @@ components:
       in: query
       schema: { type: string }
 
-    # Repeatable query param (?saleType=ForSale&saleType=CashOffer)
     SaleType:
       name: saleType
       in: query
-      description: Repeatable enum. Allowed shapes per business rules.
+      description: Repeatable enum filter (?saleType=ForSale&saleType=CashOffer)
       schema:
         type: array
         items:
@@ -141,7 +291,7 @@ components:
   schemas:
     SignUpPrivate:
       type: object
-      required: [firstName, lastName, email, phone, password, confirmPassword]
+      required: [firstName, lastName, email, phone, password, confirmPassword, acceptTos]
       properties:
         firstName: { type: string }
         lastName:  { type: string }
@@ -156,7 +306,7 @@ components:
     SignUpDealer:
       type: object
       required:
-        [firstName, lastName, email, phone, address, password, confirmPassword, businessType, companyName, syndicationSystem]
+        [firstName, lastName, email, phone, address, password, confirmPassword, whoAreYouRepresenting, businessType, companyName, syndicationSystem, subscriptionIds, acceptTos]
       properties:
         firstName: { type: string }
         lastName:  { type: string }
@@ -165,12 +315,28 @@ components:
         address:   { type: string }
         password:  { type: string, minLength: 8 }
         confirmPassword: { type: string, minLength: 8 }
+        whoAreYouRepresenting:
+          type: string
+          enum: [SingleDealer, GroupDealer]
+        dealerGroupName:
+          type: string
+          description: Required if whoAreYouRepresenting=GroupDealer
         businessType: { type: string }
         companyName:  { type: string }
-        syndicationSystem: { type: string }
-        owner: { type: boolean }
-        businessSites: { type: array, items: { type: string } }
-        subscriptionProductIds: { type: array, items: { type: string } }
+        syndicationSystem: { type: string, example: "vAuto" }
+        owner:
+          type: object
+          properties:
+            isOwner: { type: boolean }
+            name: { type: string }
+            email: { type: string, format: email }
+        businessSites:
+          type: array
+          items: { type: string }
+        subscriptionIds:
+          type: array
+          items: { type: string }
+          description: Stripe price IDs (one or more)
         acceptTos: { type: boolean }
         country:   { type: string, example: "US" }
 
