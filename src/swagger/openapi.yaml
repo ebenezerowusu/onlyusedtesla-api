@@ -6,12 +6,19 @@ servers:
   - url: https://apiv2.onlyusedtesla.com
   - url: http://localhost:3003
 
-tags:
-  - name: Health
-  - name: Auth
-
 security:
   - bearerAuth: []
+
+tags:
+  - name: Health
+  - name: Listings
+  - name: Auth
+  - name: Users
+  - name: Sellers
+  - name: SellerGroups
+  - name: Roles
+  - name: Permissions
+  - name: Payments
 
 paths:
   /health:
@@ -20,8 +27,7 @@ paths:
       summary: Service liveness
       security: []
       responses:
-        '200': { $ref: '#/components/responses/R200' }
-        '500': { $ref: '#/components/responses/R500' }
+        '200': { description: OK }
 
   /health/cosmos:
     get:
@@ -29,8 +35,7 @@ paths:
       summary: Cosmos connectivity
       security: []
       responses:
-        '200': { $ref: '#/components/responses/R200' }
-        '500': { $ref: '#/components/responses/R500' }
+        '200': { description: OK }
 
   /health/storage:
     get:
@@ -38,8 +43,22 @@ paths:
       summary: Azure Storage connectivity
       security: []
       responses:
-        '200': { $ref: '#/components/responses/R200' }
-        '500': { $ref: '#/components/responses/R500' }
+        '200': { description: OK }
+
+  /listings/search:
+    get:
+      tags: [Listings]
+      summary: Search listings (FULL docs inc. images). Country-filtered.
+      parameters:
+        - { $ref: '#/components/parameters/XCountryRequired' }
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Ct' }
+        - { $ref: '#/components/parameters/SaleType' }  # repeatable (?saleType=ForSale&saleType=CashOffer)
+        - name: saleTypeMatch
+          in: query
+          schema: { type: string, enum: [any, only], default: any }
+      responses:
+        '200': { description: OK }
 
   /auth/signup/private:
     post:
@@ -53,14 +72,12 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/SignUpPrivate' }
       responses:
-        '201': { $ref: '#/components/responses/R201' }
-        '422': { $ref: '#/components/responses/R422' }
-        '500': { $ref: '#/components/responses/R500' }
+        '201': { description: Created }
 
   /auth/signup/dealer:
     post:
       tags: [Auth]
-      summary: Sign up as Dealer (creates user + seller + optional sellerGroup)
+      summary: Sign up as Dealer (creates user + seller; optional sellerGroup)
       parameters:
         - { $ref: '#/components/parameters/XCountry' }
       requestBody:
@@ -69,9 +86,7 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/SignUpDealer' }
       responses:
-        '201': { $ref: '#/components/responses/R201' }
-        '422': { $ref: '#/components/responses/R422' }
-        '500': { $ref: '#/components/responses/R500' }
+        '201': { description: Created }
 
   /auth/signin:
     post:
@@ -83,10 +98,151 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/SignIn' }
       responses:
-        '200': { $ref: '#/components/responses/R200' }
-        '401': { $ref: '#/components/responses/R401' }
-        '422': { $ref: '#/components/responses/R422' }
-        '500': { $ref: '#/components/responses/R500' }
+        '200': { description: OK }
+
+  /auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh tokens
+      responses:
+        '200': { description: OK }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout
+      responses:
+        '204': { description: No Content }
+
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Current user
+      responses:
+        '200': { description: OK }
+    patch:
+      tags: [Users]
+      summary: Update current user
+      responses:
+        '200': { description: OK }
+
+  /sellers/me:
+    get:
+      tags: [Sellers]
+      summary: My seller document
+      responses:
+        '200': { description: OK }
+
+  /sellers/{id}:
+    get:
+      tags: [Sellers]
+      summary: Get seller by id
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+    patch:
+      tags: [Sellers]
+      summary: Update seller
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /seller-groups:
+    post:
+      tags: [SellerGroups]
+      summary: Create seller group
+      responses:
+        '201': { description: Created }
+    get:
+      tags: [SellerGroups]
+      summary: List seller groups
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Ct' }
+      responses:
+        '200': { description: OK }
+
+  /roles:
+    get:
+      tags: [Roles]
+      summary: List roles
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+        - { $ref: '#/components/parameters/Ct' }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Roles]
+      summary: Create role
+      responses:
+        '201': { description: Created }
+
+  /roles/{id}:
+    patch:
+      tags: [Roles]
+      summary: Update role
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /permissions:
+    get:
+      tags: [Permissions]
+      summary: List permissions
+      parameters:
+        - { $ref: '#/components/parameters/Limit' }
+      responses:
+        '200': { description: OK }
+    post:
+      tags: [Permissions]
+      summary: Create permission
+      responses:
+        '201': { description: Created }
+
+  /permissions/{id}:
+    patch:
+      tags: [Permissions]
+      summary: Update permission
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /payments/dealer/checkout:
+    post:
+      tags: [Payments]
+      summary: Init dealer subscription checkout (Stripe)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subscriptionIds, customerEmail]
+              properties:
+                subscriptionIds:
+                  type: array
+                  items: { type: string }
+                customerEmail:
+                  type: string
+                  format: email
+      responses:
+        '201': { description: Created }
 
 components:
   securitySchemes:
@@ -103,11 +259,39 @@ components:
       required: false
       schema: { type: string, example: "US" }
 
+    XCountryRequired:
+      name: X-Country
+      in: header
+      description: Country isolation. Required for this endpoint.
+      required: true
+      schema: { type: string, example: "US" }
+
+    Limit:
+      name: limit
+      in: query
+      schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
+
+    Ct:
+      name: continuationToken
+      in: query
+      schema: { type: string }
+
+    SaleType:
+      name: saleType
+      in: query
+      description: Repeatable enum filter (?saleType=ForSale&saleType=CashOffer)
+      schema:
+        type: array
+        items:
+          type: string
+          enum: [ForSale, Lease, SalePending, CashOffer]
+      style: form
+      explode: true
+
   schemas:
     SignUpPrivate:
       type: object
-      required:
-        [firstName, lastName, email, phone, password, confirmPassword, acceptTos]
+      required: [firstName, lastName, email, phone, password, confirmPassword, acceptTos]
       properties:
         firstName: { type: string }
         lastName:  { type: string }
@@ -162,200 +346,3 @@ components:
       properties:
         email: { type: string, format: email }
         password: { type: string, minLength: 8 }
-
-    # ------------------ Response Schemas ------------------
-    Success:
-      type: object
-      additionalProperties: false
-      properties:
-        success: { type: boolean, const: true }
-        data: {}
-        meta:
-          type: object
-          properties:
-            limit: { type: integer }
-            continuationToken: { type: string, nullable: true }
-            count: { type: integer }
-      required: [success, data]
-
-    Problem:
-      type: object
-      additionalProperties: true
-      properties:
-        type:      { type: string, format: uri, default: "about:blank" }
-        title:     { type: string }
-        status:    { type: integer }
-        detail:    { type: string }
-        instance:  { type: string }
-        requestId: { type: string }
-      required: [title, status]
-
-    ValidationProblem:
-      allOf:
-        - $ref: '#/components/schemas/Problem'
-        - type: object
-          properties:
-            errors:
-              type: array
-              items:
-                type: object
-                properties:
-                  path: { type: string }
-                  code: { type: string }
-                  message: { type: string }
-
-    AuthTokens:
-      type: object
-      properties:
-        accessToken: { type: string }
-        refreshToken:{ type: string }
-        tokenType:   { type: string, example: "Bearer" }
-        expiresIn:   { type: integer, example: 900 }
-
-  responses:
-    R200:
-      description: OK
-      content:
-        application/json:
-          schema: { $ref: '#/components/schemas/Success' }
-          examples:
-            signin:
-              summary: Successful sign in
-              value:
-                success: true
-                data:
-                  accessToken: "eyJhbGciOiJFZERTQSIs..."
-                  refreshToken: "eyJhbGciOiJFZERTQSIs..."
-                  tokenType: "Bearer"
-                  expiresIn: 900
-
-    R201:
-      description: Created
-      content:
-        application/json:
-          schema: { $ref: '#/components/schemas/Success' }
-          examples:
-            signupPrivate:
-              summary: Private signup created
-              value:
-                success: true
-                data:
-                  userId: "usr_777"
-                  sellerId: "seller_xyz789"
-                  emailVerified: false
-            signupDealer:
-              summary: Dealer signup + optional group
-              value:
-                success: true
-                data:
-                  userId: "usr_123"
-                  sellerId: "dealer_abc123"
-                  dealerGroupId: "dealerGroup_456"
-                  checkout:
-                    provider: "stripe"
-                    status: "created"
-                    sessionId: "cs_test_123"
-                    url: "https://checkout.stripe.com/c/pay/cs_test_123"
-
-    R204:
-      description: No Content
-
-    R400:
-      description: Bad Request
-      content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/Problem' }
-          examples:
-            bad:
-              value:
-                type: "about:blank"
-                title: "Bad Request"
-                status: 400
-                detail: "Malformed query parameter."
-
-    R401:
-      description: Unauthorized
-      content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/Problem' }
-          examples:
-            unauthorized:
-              value:
-                type: "about:blank"
-                title: "Unauthorized"
-                status: 401
-                detail: "Invalid bearer token."
-
-    R403:
-      description: Forbidden
-      content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/Problem' }
-          examples:
-            forbidden:
-              value:
-                type: "about:blank"
-                title: "Forbidden"
-                status: 403
-                detail: "Missing permissions."
-
-    R404:
-      description: Not Found
-      content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/Problem' }
-          examples:
-            missing:
-              value:
-                type: "about:blank"
-                title: "Not Found"
-                status: 404
-                detail: "Resource not found."
-
-    R422:
-      description: Validation Failed
-      content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/ValidationProblem' }
-          examples:
-            validation:
-              value:
-                type: "about:blank"
-                title: "Validation Failed"
-                status: 422
-                detail: "Invalid field values"
-                errors:
-                  - path: "password"
-                    message: "Must be at least 8 characters"
-                  - path: "email"
-                    message: "Invalid email"
-
-    R429:
-      description: Too Many Requests
-      headers:
-        Retry-After:
-          description: Seconds before retry
-          schema: { type: integer }
-      content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/Problem' }
-          examples:
-            throttled:
-              value:
-                type: "about:blank"
-                title: "Too Many Requests"
-                status: 429
-                detail: "Rate limit exceeded."
-
-    R500:
-      description: Internal Server Error
-      content:
-        application/problem+json:
-          schema: { $ref: '#/components/schemas/Problem' }
-          examples:
-            boom:
-              value:
-                type: "about:blank"
-                title: "Internal Server Error"
-                status: 500
-                detail: "Unexpected error occurred."
