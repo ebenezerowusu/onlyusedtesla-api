@@ -1,42 +1,65 @@
-import { Body, Controller, Headers, Post } from '@nestjs/common';
+import { Body, Controller, HttpCode, Post, Req, UsePipes } from '@nestjs/common';
+import { ZodValidationPipe } from '../common/zod-validation.pipe';
+import { SignInSchema, SignInDto } from './dto/signin.dto';
+import { SignupPrivateSchema, SignupPrivateDto } from './dto/signup-private.dto';
+import { SignupDealerSchema, SignupDealerDto } from './dto/signup-dealer.dto';
 import { AuthService } from './auth.service';
-import { SignUpPrivateDto, SignUpDealerDto, SignInDto } from '../users/users.dto';
-import { VerifyEmailDto, ResetPasswordDto, ResetPasswordRequestDto } from './auth.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly auth: AuthService) {}
 
+  @Post('signin')
+  @HttpCode(200)
+  @UsePipes(new ZodValidationPipe(SignInSchema))
+  async signIn(@Body() dto: SignInDto) {
+    // TODO: fetch user from Cosmos by email, verify password
+    const fakeUser = {
+      id: 'usr_123',
+      profile: { firstName: 'Jane', lastName: 'Doe', email: dto.email, phone: '+1555123' },
+      roles: ['private_seller'],
+      permissions: ['users.read','sellers.read'],
+      market: { country: 'US', allowCountries: ['US'] },
+    };
+    const tokens = await this.auth.signTokens({ sub: fakeUser.id, roles: fakeUser.roles, permissions: fakeUser.permissions });
+    return { ...tokens, user: fakeUser };
+  }
+
   @Post('signup/private')
-  signUpPrivate(@Body() dto: SignUpPrivateDto, @Headers('x-country') country?: string) {
-    return this.auth.signUpPrivate(dto, country);
+  @UsePipes(new ZodValidationPipe(SignupPrivateSchema))
+  async signupPrivate(@Body() dto: SignupPrivateDto) {
+    // TODO: create user in Cosmos (role private_seller), create seller (type private), send VERIFY_EMAIL
+    return {
+      userId: 'usr_private_mock',
+      sellerId: 'seller_private_mock',
+      verifyEmailSent: true,
+    };
   }
 
   @Post('signup/dealer')
-  signUpDealer(@Body() dto: SignUpDealerDto, @Headers('x-country') country?: string) {
-    return this.auth.signUpDealer(dto, country);
+  @UsePipes(new ZodValidationPipe(SignupDealerSchema))
+  async signupDealer(@Body() dto: SignupDealerDto) {
+    // TODO: create user (dealer_admin); create seller (dealer) with companyName, syndicationSystem, businessSite;
+    // if GroupDealer => create sellerGroup; init Stripe checkout using dto.subscriptionIds
+    return {
+      userId: 'usr_dealer_mock',
+      sellerId: 'dealer_mock',
+      sellerGroupId: dto.whoAreYouRepresenting === 'Group Dealer' ? 'dealerGroup_mock' : null,
+      stripe: { checkoutUrl: 'https://stripe.example/checkout', sessionId: 'cs_test_mock' },
+    };
   }
 
-  @Post('signin')
-  signIn(@Body() dto: SignInDto) {
-    return this.auth.signIn(dto.email, dto.password);
+  @Post('refresh')
+  @HttpCode(200)
+  async refresh(@Req() _req: any) {
+    // TODO: validate incoming refresh token and return new pair
+    return { accessToken: 'mock', refreshToken: 'mock' };
   }
 
-  @Post('verify-email')
-  verifyEmail(_dto: VerifyEmailDto) {
-    // Stage 1: stub response; Stage 2 implement token store + update auth.emailVerified
-    return { ok: true };
-  }
-
-  @Post('reset-password/request')
-  resetPasswordRequest(@Body() dto: ResetPasswordRequestDto) {
-    // Stage 1: stub send email with reset link
-    return { ok: true, email: dto.email };
-  }
-
-  @Post('reset-password/confirm')
-  resetPassword(@Body() _dto: ResetPasswordDto) {
-    // Stage 1: stub; Stage 2 verify token + update hash
-    return { ok: true };
+  @Post('logout')
+  @HttpCode(204)
+  async logout() {
+    // TODO: invalidate refresh token server-side if we store it
+    return;
   }
 }

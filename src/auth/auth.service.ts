@@ -1,53 +1,61 @@
-import { Injectable, UnauthorizedException, BadRequestException } from '@nestjs/common';
-import { UsersService } from '../users/users.service';
-import { UsersCosmosRepo } from '../infra/repos/users.cosmos.repo';
-import { JwtService } from '../crypto/jwt.service';
-import * as argon2 from 'argon2';
-import { nanoid } from 'nanoid';
-import { EmailService } from '../notify/email/email.service';
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { SignJWT, importJWK, JWTPayload, KeyLike } from 'jose';
+import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
-  constructor(
-    private readonly users: UsersService,
-    private readonly usersRepo: UsersCosmosRepo,
-    private readonly jwt: JwtService,
-    private readonly email: EmailService,
-  ) {}
+  private privateKeyPromise: Promise<KeyLike> | null = null;
 
-  // signup
-  signUpPrivate(input: any, country?: string) {
-    return this.users.createPrivate(input, country);
+  constructor(private readonly cfg: ConfigService) {}
+
+  // --- JWT signing (EdDSA with private key) ---
+  private async getPrivateKey(): Promise<KeyLike> {
+    if (!this.privateKeyPromise) {
+      this.privateKeyPromise = (async () => {
+        const path = this.cfg.get<string>('JWT_JWKS_PRIVATE_PATH')!;
+        const jwks = JSON.parse(require('fs').readFileSync(path, 'utf8'));
+        const key = jwks.keys?.find((k: any) => k.kty === 'OKP' && k.crv === 'Ed25519');
+        if (!key) throw new Error('No Ed25519 key in private JWKS');
+        const importedKey = await importJWK(key, 'EdDSA');
+        if (!('type' in importedKey)) {
+          throw new Error('Imported key is not a KeyLike');
+        }
+        return importedKey as KeyLike;
+      })();
+    }
+    return this.privateKeyPromise;
   }
 
-  signUpDealer(input: any, country?: string) {
-    return this.users.createDealer(input, country);
+  async hashPassword(raw: string) {
+    const salt = await bcrypt.genSalt(10);
+    return bcrypt.hash(raw, salt);
+  }
+  async comparePassword(raw: string, hash: string) {
+    return bcrypt.compare(raw, hash);
   }
 
-  // sign in
-  async signIn(email: string, password: string) {
-    const user = await this.usersRepo.byEmail(email);
-    if (!user) throw new UnauthorizedException('Invalid credentials');
-    const ok = await argon2.verify(user.auth.passwordHash, password);
-    if (!ok) throw new UnauthorizedException('Invalid credentials');
+  async signTokens(payload: JWTPayload) {
+    const now = Math.floor(Date.now()/1000);
+    const issuer = this.cfg.get<string>('JWT_ISSUER')!;
+    const audience = this.cfg.get<string>('JWT_AUDIENCE')!;
+    const accessTtl = Number(this.cfg.get<number>('JWT_ACCESS_TTL_SEC') ?? 900);
+    const refreshTtl = Number(this.cfg.get<number>('JWT_REFRESH_TTL_SEC') ?? 2592000);
+    const pk = await this.getPrivateKey();
 
-    const sub = user.id;
-    const roles = user.roles ?? [];
-    const country = user.market?.country ?? 'US';
+    const accessToken = await new SignJWT(payload)
+      .setProtectedHeader({ alg: 'EdDSA' })
+      .setIssuer(issuer).setAudience(audience)
+      .setIssuedAt(now).setExpirationTime(now + accessTtl)
+      .sign(pk);
 
-    const access = await this.jwt.signAccess({ sub, roles, country });
-    const refresh = await this.jwt.signRefresh({ sub, roles, country });
-    return { access, refresh, user: { id: user.id, email: user.profile.email, roles } };
-  }
+    const refreshToken = await new SignJWT({ sub: payload.sub, typ: 'refresh' })
+      .setProtectedHeader({ alg: 'EdDSA' })
+      .setIssuer(issuer).setAudience(audience)
+      .setIssuedAt(now).setExpirationTime(now + refreshTtl)
+      .sign(pk);
 
-  // email verify (token format up to you, here just a stubbed opaque value)
-  async sendVerifyEmail(user: any) {
-    const token = `ver_${nanoid(24)}`;
-    // store token on user for lookup (skipped: add a real verification store or field)
-    await this.email.sendTemplate(user.profile.email, 'SENDGRID_TMPL_VERIFY_EMAIL', {
-      firstName: user.profile.firstName ?? 'there',
-      verifyUrl: `${process.env.APP_URL}/verify-email?token=${token}`,
-    });
-    return { sent: true };
+    return { accessToken, refreshToken };
   }
 }
+
