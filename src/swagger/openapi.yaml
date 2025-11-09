@@ -4,10 +4,10 @@ info:
   version: 0.1.1
 servers:
   - url: https://apiv2.onlyusedtesla.com
+  - url: http://localhost:3003
 
 tags:
   - name: Health
-  - name: Listings
   - name: Auth
 
 security:
@@ -20,7 +20,8 @@ paths:
       summary: Service liveness
       security: []
       responses:
-        '200': { description: OK }
+        '200': { $ref: '#/components/responses/R200' }
+        '500': { $ref: '#/components/responses/R500' }
 
   /health/cosmos:
     get:
@@ -28,7 +29,8 @@ paths:
       summary: Cosmos connectivity
       security: []
       responses:
-        '200': { description: OK }
+        '200': { $ref: '#/components/responses/R200' }
+        '500': { $ref: '#/components/responses/R500' }
 
   /health/storage:
     get:
@@ -36,22 +38,8 @@ paths:
       summary: Azure Storage connectivity
       security: []
       responses:
-        '200': { description: OK }
-
-  /listings/search:
-    get:
-      tags: [Listings]
-      summary: Search listings (FULL docs inc. images). Country-filtered.
-      parameters:
-        - { $ref: '#/components/parameters/XCountryRequired' }
-        - { $ref: '#/components/parameters/Limit' }
-        - { $ref: '#/components/parameters/Ct' }
-        - { $ref: '#/components/parameters/SaleType' }
-        - name: saleTypeMatch
-          in: query
-          schema: { type: string, enum: [any, only], default: any }
-      responses:
-        '200': { description: OK }
+        '200': { $ref: '#/components/responses/R200' }
+        '500': { $ref: '#/components/responses/R500' }
 
   /auth/signup/private:
     post:
@@ -65,12 +53,14 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/SignUpPrivate' }
       responses:
-        '201': { description: Created }
+        '201': { $ref: '#/components/responses/R201' }
+        '422': { $ref: '#/components/responses/R422' }
+        '500': { $ref: '#/components/responses/R500' }
 
   /auth/signup/dealer:
     post:
       tags: [Auth]
-      summary: Sign up as Dealer (creates user + reserves sellerId)
+      summary: Sign up as Dealer (creates user + seller + optional sellerGroup)
       parameters:
         - { $ref: '#/components/parameters/XCountry' }
       requestBody:
@@ -79,7 +69,9 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/SignUpDealer' }
       responses:
-        '201': { description: Created }
+        '201': { $ref: '#/components/responses/R201' }
+        '422': { $ref: '#/components/responses/R422' }
+        '500': { $ref: '#/components/responses/R500' }
 
   /auth/signin:
     post:
@@ -91,7 +83,10 @@ paths:
           application/json:
             schema: { $ref: '#/components/schemas/SignIn' }
       responses:
-        '200': { description: OK }
+        '200': { $ref: '#/components/responses/R200' }
+        '401': { $ref: '#/components/responses/R401' }
+        '422': { $ref: '#/components/responses/R422' }
+        '500': { $ref: '#/components/responses/R500' }
 
 components:
   securitySchemes:
@@ -104,44 +99,15 @@ components:
     XCountry:
       name: X-Country
       in: header
-      description: Required for non-admin routes; country isolation.
+      description: Optional country isolation for non-admin routes.
       required: false
       schema: { type: string, example: "US" }
-
-    XCountryRequired:
-      name: X-Country
-      in: header
-      description: Country isolation. Required for this endpoint.
-      required: true
-      schema: { type: string, example: "US" }
-
-    Limit:
-      name: limit
-      in: query
-      schema: { type: integer, minimum: 1, maximum: 100, default: 10 }
-
-    Ct:
-      name: continuationToken
-      in: query
-      schema: { type: string }
-
-    # Repeatable query param (?saleType=ForSale&saleType=CashOffer)
-    SaleType:
-      name: saleType
-      in: query
-      description: Repeatable enum. Allowed shapes per business rules.
-      schema:
-        type: array
-        items:
-          type: string
-          enum: [ForSale, Lease, SalePending, CashOffer]
-      style: form
-      explode: true
 
   schemas:
     SignUpPrivate:
       type: object
-      required: [firstName, lastName, email, phone, password, confirmPassword]
+      required:
+        [firstName, lastName, email, phone, password, confirmPassword, acceptTos]
       properties:
         firstName: { type: string }
         lastName:  { type: string }
@@ -156,7 +122,7 @@ components:
     SignUpDealer:
       type: object
       required:
-        [firstName, lastName, email, phone, address, password, confirmPassword, businessType, companyName, syndicationSystem]
+        [firstName, lastName, email, phone, address, password, confirmPassword, whoAreYouRepresenting, businessType, companyName, syndicationSystem, subscriptionIds, acceptTos]
       properties:
         firstName: { type: string }
         lastName:  { type: string }
@@ -165,12 +131,28 @@ components:
         address:   { type: string }
         password:  { type: string, minLength: 8 }
         confirmPassword: { type: string, minLength: 8 }
+        whoAreYouRepresenting:
+          type: string
+          enum: [SingleDealer, GroupDealer]
+        dealerGroupName:
+          type: string
+          description: Required if whoAreYouRepresenting=GroupDealer
         businessType: { type: string }
         companyName:  { type: string }
-        syndicationSystem: { type: string }
-        owner: { type: boolean }
-        businessSites: { type: array, items: { type: string } }
-        subscriptionProductIds: { type: array, items: { type: string } }
+        syndicationSystem: { type: string, example: "vAuto" }
+        owner:
+          type: object
+          properties:
+            isOwner: { type: boolean }
+            name: { type: string }
+            email: { type: string, format: email }
+        businessSites:
+          type: array
+          items: { type: string }
+        subscriptionIds:
+          type: array
+          items: { type: string }
+          description: Stripe price IDs (one or more)
         acceptTos: { type: boolean }
         country:   { type: string, example: "US" }
 
@@ -180,3 +162,200 @@ components:
       properties:
         email: { type: string, format: email }
         password: { type: string, minLength: 8 }
+
+    # ------------------ Response Schemas ------------------
+    Success:
+      type: object
+      additionalProperties: false
+      properties:
+        success: { type: boolean, const: true }
+        data: {}
+        meta:
+          type: object
+          properties:
+            limit: { type: integer }
+            continuationToken: { type: string, nullable: true }
+            count: { type: integer }
+      required: [success, data]
+
+    Problem:
+      type: object
+      additionalProperties: true
+      properties:
+        type:      { type: string, format: uri, default: "about:blank" }
+        title:     { type: string }
+        status:    { type: integer }
+        detail:    { type: string }
+        instance:  { type: string }
+        requestId: { type: string }
+      required: [title, status]
+
+    ValidationProblem:
+      allOf:
+        - $ref: '#/components/schemas/Problem'
+        - type: object
+          properties:
+            errors:
+              type: array
+              items:
+                type: object
+                properties:
+                  path: { type: string }
+                  code: { type: string }
+                  message: { type: string }
+
+    AuthTokens:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken:{ type: string }
+        tokenType:   { type: string, example: "Bearer" }
+        expiresIn:   { type: integer, example: 900 }
+
+  responses:
+    R200:
+      description: OK
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Success' }
+          examples:
+            signin:
+              summary: Successful sign in
+              value:
+                success: true
+                data:
+                  accessToken: "eyJhbGciOiJFZERTQSIs..."
+                  refreshToken: "eyJhbGciOiJFZERTQSIs..."
+                  tokenType: "Bearer"
+                  expiresIn: 900
+
+    R201:
+      description: Created
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Success' }
+          examples:
+            signupPrivate:
+              summary: Private signup created
+              value:
+                success: true
+                data:
+                  userId: "usr_777"
+                  sellerId: "seller_xyz789"
+                  emailVerified: false
+            signupDealer:
+              summary: Dealer signup + optional group
+              value:
+                success: true
+                data:
+                  userId: "usr_123"
+                  sellerId: "dealer_abc123"
+                  dealerGroupId: "dealerGroup_456"
+                  checkout:
+                    provider: "stripe"
+                    status: "created"
+                    sessionId: "cs_test_123"
+                    url: "https://checkout.stripe.com/c/pay/cs_test_123"
+
+    R204:
+      description: No Content
+
+    R400:
+      description: Bad Request
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          examples:
+            bad:
+              value:
+                type: "about:blank"
+                title: "Bad Request"
+                status: 400
+                detail: "Malformed query parameter."
+
+    R401:
+      description: Unauthorized
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          examples:
+            unauthorized:
+              value:
+                type: "about:blank"
+                title: "Unauthorized"
+                status: 401
+                detail: "Invalid bearer token."
+
+    R403:
+      description: Forbidden
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          examples:
+            forbidden:
+              value:
+                type: "about:blank"
+                title: "Forbidden"
+                status: 403
+                detail: "Missing permissions."
+
+    R404:
+      description: Not Found
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          examples:
+            missing:
+              value:
+                type: "about:blank"
+                title: "Not Found"
+                status: 404
+                detail: "Resource not found."
+
+    R422:
+      description: Validation Failed
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/ValidationProblem' }
+          examples:
+            validation:
+              value:
+                type: "about:blank"
+                title: "Validation Failed"
+                status: 422
+                detail: "Invalid field values"
+                errors:
+                  - path: "password"
+                    message: "Must be at least 8 characters"
+                  - path: "email"
+                    message: "Invalid email"
+
+    R429:
+      description: Too Many Requests
+      headers:
+        Retry-After:
+          description: Seconds before retry
+          schema: { type: integer }
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          examples:
+            throttled:
+              value:
+                type: "about:blank"
+                title: "Too Many Requests"
+                status: 429
+                detail: "Rate limit exceeded."
+
+    R500:
+      description: Internal Server Error
+      content:
+        application/problem+json:
+          schema: { $ref: '#/components/schemas/Problem' }
+          examples:
+            boom:
+              value:
+                type: "about:blank"
+                title: "Internal Server Error"
+                status: 500
+                detail: "Unexpected error occurred."
