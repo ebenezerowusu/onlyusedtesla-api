@@ -39,11 +39,11 @@ ARG TAG=dev
 WORKDIR /app
 RUN apk add --no-cache dumb-init curl
 ENV NODE_ENV=production
-ENV PORT=3003
-EXPOSE 3003
+ENV PORT=3000
+EXPOSE 3000
 
 LABEL org.opencontainers.image.title="onlyusedtesla-api" \
-      org.opencontainers.image.description="OnlyUsedTesla Fastify/NestJS API" \
+      org.opencontainers.image.description="OnlyUsedTesla API" \
       org.opencontainers.image.revision="${TAG}"
 
 COPY --from=build      /app/dist          ./dist
